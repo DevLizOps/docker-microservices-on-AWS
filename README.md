@@ -1,4 +1,4 @@
-## Índice / Index
+## Index / Índice
 
 - [English](#english)
   - Introduction
