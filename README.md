@@ -1,228 +1,125 @@
-## Index / Índice
+## English Version
 
-- [English](#english)
-  - Introduction
-  - Deployment Steps
-    - [Step 1: Install Docker](#step-1-install-docker)
-    - [Step 2: Install Docker Compose](#step-2-install-docker-compose)
-    - [Step 3: Configure AWS](#step-3-configure-aws)
-    - [Step 4: Instance Security Settings](#step-4-instance-security-settings)
-    - [Step 5: Deploy Infrastructure](#step-5-deploy-infrastructure)
-    - [Step 6: Test the Application](#step-6-test-the-application)
-    - [Step 7: Access phpMyAdmin](#step-7-access-phpmyadmin)
+- [Haz clic aquí para la versión en Español](docs/README.es.md)
 
-- [Español](#español)
-  - Introduction 
-  - Pasos de Implementación
-    - [Paso 1: Instalación de Docker](#paso-1-instalación-de-docker)
-    - [Paso 2: Instalación de Docker Compose](#paso-2-instalación-de-docker-compose)
-    - [Paso 3: Configuración en AWS](#paso-3-configuración-en-aws)
-    - [Paso 4: Configuración de Seguridad en la Instancia](#paso-4-configuración-de-seguridad-en-la-instancia)
-    - [Paso 5: Despliegue de la Infraestructura](#paso-5-despliegue-de-la-infraestructura)
-    - [Paso 6: Prueba de la Aplicación](#paso-6-prueba-de-la-aplicación)
-    - [Paso 7: Acceso a phpMyAdmin](#paso-7-acceso-a-phpmyadmin)
-
----
-
-## English
-
-# Microservices Architecture using Docker on AWS
+# Microservices Architecture with Docker on AWS
 
 > Microservices with Docker, PHP, and MySQL
 
-This is an example of microservices implementation with Docker on AWS. To deploy it, you'll need to **have an AWS account**.
+This project demonstrates a simple microservices architecture deployed with Docker on AWS EC2. It includes a web front-end form that stores submitted data in a MySQL database and publishes an event to an AWS SNS topic.
 
-### What's this application about?
-
-It's a front-end with a form, from which a request is sent to a submit.php file with requests to an AWS SNS topic and a SQL database. On the other hand, we have an interpreter of that database, which is phpMyAdmin.
-
-Follow the steps below to deploy the entire infrastructure:
-
-### **STEP 1: Install Docker**
-
-Install Docker with the following commands:
-
-  - Update the installed packages on your instance.
+## 📁 Project Structure
 
 ```
-sudo yum update -y
+docker-microservices-on-aws
+├── html/
+│   ├── composer.json        # Composer definition file
+│   ├── index.html           # Front-end form
+│   └── submit.php           # Form handler: saves data + sends SNS
+├── php/
+│   └── Dockerfile           # Docker image for PHP
+├── mysql\_data/             # Ignored: Docker volume for MySQL
+├── create\_table.sql        # SQL script to initialize DB
+├── docker-compose.yml       # Docker orchestration
+│
 ```
 
-  - Install Docker.
+> [!NOTE]
+> The `mysql_data/` folder is used for persisting MySQL data via Docker volume. It is excluded from version control.
 
-```
-sudo yum install -y docker
-```
+## 🧰 Requirements
 
-  - Start the Docker service.
+- AWS account
+- EC2 instance (Amazon Linux 2 or similar)
+- Docker installed
+- Docker Compose v1.29.2 or later
+- IAM role with `AmazonSNSFullAccess`
 
-```
-sudo service docker start
-```
+## 🚀 Application Overview
 
-  - Add your user to the Docker group.
+The application flow is as follows:
 
-```
-sudo usermod -a -G docker $(whoami)
-```
+1. A user submits a form in the front-end (`index.html`).
+2. The `submit.php` file:
+   - Saves the data in a MySQL table (`form_data`)
+   - Sends a message to an AWS SNS topic
+3. Data can be viewed via **phpMyAdmin** (port 8080)
 
-  - Install the Python 3 package manager.
+## 🛠 Installation Guide
 
-```
-sudo yum install -y python3-pip
+### 🔹 Step 1 – Install Docker
+
+Update your EC2 instance:
+
+```bash
+sudo yum update -y                      # Updates the installed packages on your instance
+sudo yum install -y docker              # Install Docker
+sudo service docker start               # Starts the Docker service
+sudo usermod -a -G docker $(whoami)     # Adds user to the Docker group
+sudo yum install -y python3-pip         # Installs pip, the Python 3 package manager
 ````
 
-### **STEP 2: Install Docker Compose**
+### 🔹 Step 2 – Install Docker Compose
 
- - Download the binary to install Docker Compose.
-
-```
+```bash
 sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose     # Gives execution permissions to the binary file
+docker-compose --version                        # To check if Docker Compose has been installed correctly
 ```
 
- - Give execution permissions to the binary file.
+### 🔹 Step 3 – Create SNS Topic
 
-````
-sudo chmod +x /usr/local/bin/docker-compose
-````
-
-Optionally, you can check if Docker Compose has been installed correctly:
-
-```
-docker-compose --version
-```
-
-### **STEP 3: Configure AWS**
-
- - Create an SNS topic and subscribe to it through your desired medium.
+Create a topic in AWS SNS and subscribe an email or another service.
 
 > [!WARNING]
-> You must change the ARN of the submit.php file to the ARN of your topic.
+> Make sure to replace the ARN in `html/submit.php` with your topic's ARN.
 
- - Create a role on your instance (actions > security > modify IAM role) and associate that role with the `SNSFullAccess` policy through the IAM service.
+### 🔹 Step 4 – Attach IAM Role
 
-### **STEP 4: Instance Security Settings**
+On your EC2 instance:
 
-Configure the security settings of your instance allowing HTTP and SSH traffic, as well as ports 3036 and 8080.
+- Go to **Actions > Security > Modify IAM Role**
+- Attach a role with the **AmazonSNSFullAccess** policy
 
-### **STEP 5: Deploy Infrastructure**
+### 🔹 Step 5 – Configure Security Group
 
-Deploy the infrastructure with the following command:
+Open these ports in your EC2 Security Group:
 
-```
-sudo docker-compose up
-```
+- HTTP (port 80)
+- SSH (port 22)
+- MySQL (port 3306)
+- phpMyAdmin (port 8080)
 
-### **STEP 6: Test the Application**
+### 🔹 Step 6 – Run the Infrastructure
 
-To test the application, access the IP of your instance, fill out the form, and submit it. It should return the message "Message sent successfully."
+From the root of your project:
 
-### **STEP 7: Access phpMyAdmin**
-
-You can access the interpreter of that data with phpMyAdmin by accessing port 8080 of your instance (http://your_public_ip:8080), which will show you the record in the `form_data` table form the database `my_database`. You can access with:
-
- - Username: `root`.
- - Password: `example_password`.
-
----
-
-## Español
-
-# Microservicios con Docker en AWS
-
-> Microservicios con docker, php y mysql
-
-Este es un ejemplo de implementación de microservicios con docker en AWS. Para desplegarlo, será necesario **tener una cuenta en AWS**.
-
-
-### ¿En qué consiste la aplicación?
-
-Se trata de un front-end con un formulario, del que se manda una petición a un fichero submit.php con peticiones a un tópico SNS de AWS y una base de datos de SQL. Por otro lado, tenemos un intérprete de esa base de datos, que es phpMyAdmin.
-
-Siga los siguientes pasos para para poder desplegar toda la infraestructura:
-
-### **PASO 1: Instalación de Docker**
-
-Instale docker con los siguientes comandos:
-  
-  - Actualice los paquetes instalados en su instancia.
-
-```
-sudo yum update -y
+```bash
+docker-compose up
 ```
 
-  - Instale docker.
+### 🔹 Step 7 – Use the App
+
+- Open your instance's public IP in the browser
+- Fill out the form
+- Check SNS for the published message
+
+### 🔹 Step 8 – View Data via phpMyAdmin
+
+Visit:
 
 ```
-sudo yum install -y docker
+http://YOUR_PUBLIC_IP:8080
 ```
 
-  - Arranque el servicio docker
-     
-```
-sudo service docker start
-```
+Use:
 
-  - Añada su usuario al grupo docker
-  
-```
-sudo usermod -a -G docker $(whoami)
-```
+- **Username**: `root`
+- **Password**: `example_password`
 
-  - Instale el administrador de paquetes de pyhton3
+The table is called `form_data`.
 
-```
-sudo yum install -y python3-pip
-```
+## 🧠 Extra Tips
 
-### **PASO 2: Instalación de Docker Compose**
-
- - Descargue el binario para instalar docker-compose.
-
-```
-sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-```
-
-  - Dé permisos de ejecución al archivo binario.
-
-```
-sudo chmod +x /usr/local/bin/docker-compose
-```
-
-Si quiere, puede comprobar que docker-compose se haya instalado correctamente:
-
-```
-docker-compose --version
-```
-
-### **PASO 3: Configuración en AWS**
-
- - Cree un tópico SNS y suscríbase a él por el medio que desee.
-
-> [!WARNING]
-> Debe cambiar el arn del fichero submit.php por el arn de su tópico.
-
- - Cree un rol en su instancia (acciones > seguridad > modificar rol de IAM) y asocie a ese rol la política SNSFullAccess mediante el servicio IAM.
-
-### **PASO 4: Configuración de Seguridad en la Instancia**
-
-Configure los ajustes de seguridad de su instancia permitiendo el tráfico HTTP y SSH, además de los puertos 3036 y 8080.
-
-### **PASO 5: Despliegue de la Infraestructura**
-
-Despliegue la infraestructura con el siguiente comando:
-
-```
-sudo docker-compose up
-```
-
-### **PASO 6: Prueba de la Aplicación**
-
-Para probar la aplicación, acceda a la IP de su instancia, rellene el formulario y envíelo. Debería devolverle el mensaje "Message sent successfully."
-
-### **PASO 7: Acceso a phpMyAdmin**
-
-Puede acceder al intérprete de esos datos con phpMyAdmin accediendo al puerto 8080 de su instancia (http://su_ip_publica:8080), que le mostrará el registro del formulario en la tabla `form_data` de la base de datos `my_database`. Puede acceder con:
-
- - Usuario: `root`.
- - Contraseña: `example_password`.
+- To initialize the DB manually, you can connect to MySQL and run `create_table.sql`
+- You can extend SNS integration to trigger Lambda functions or notify other systems
